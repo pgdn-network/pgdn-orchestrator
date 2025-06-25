@@ -1,0 +1,141 @@
+---
+description: Development, testing, and architecture guidance for working with the PGDN agentic security scanner.
+globs: 
+alwaysApply: true
+---
+
+# PGDN Development Guide
+
+## Install & Setup
+Run these when starting development or resetting environments:
+
+```bash
+pip install -e .
+pip install -r requirements.txt
+python setup.py develop
+```
+
+## Database Migrations
+Standard Alembic commands:
+
+```bash
+alembic upgrade head
+alembic revision --autogenerate -m "description"
+alembic current
+```
+
+## Dev DB Setup
+For fresh development DB via Docker and code:
+
+```bash
+./scripts/dev-start.sh
+python -c "from core.database import create_tables; from core.config import Config; config = Config(); create_tables(config.database)"
+```
+
+## Testing
+Use `pytest` with flags depending on scope:
+
+```bash
+pytest
+pytest tests/test_*.py
+pytest -v
+pytest --database
+pytest --integration
+python -m pytest conftest.py
+```
+
+## CLI Usage
+Run the full PGDN pipeline or target specific stages:
+
+```bash
+pgdn
+pgdn --help
+pgdn --stage recon
+pgdn --protocol sui
+pgdn --scan-target <IP>
+```
+
+## Docker Development
+Spin up services and run inside containers:
+
+```bash
+docker-compose up -d postgres redis
+docker-compose run --rm app pgdn --help
+docker-compose exec app /bin/bash
+```
+
+## Library Examples
+Use scripts to interact directly with the PGDN Python API:
+
+```bash
+python examples/library_usage.py
+python examples/library/basic_scanning.py
+python pgdn_library_example.py
+```
+
+## Project Architecture
+
+- **Reconnaissance** → `agents/recon/`
+- **Scanning** → `agents/scan/`
+- **Processing** → `agents/process/`
+- **Scoring** → `agents/score/`
+- **Reporting/Publishing** → `agents/report/`, `agents/publish/`
+
+## Codebase Highlights
+
+- `pgdn/` → core Python library
+- `cli.py` → CLI wrapper
+- `pgdn_entry.py` → CLI ↔ library bridge
+- `pipeline.py` → orchestrates pipeline
+- `scanner.py` → handles scan lifecycle
+- `queue.py` → Celery integration
+- `agents.py` → dynamic agent registry
+
+## DB Layer
+
+- Alembic migrations: `alembic/versions/`
+- SQLAlchemy models: `pgdn/models/`
+- Repository abstraction: `pgdn/repositories/`
+- Test DB: configured in `conftest.py` (uses `test_depin`)
+
+## Scanning Infra
+
+- Protocol-specific: `pgdn/scanning/`
+- Tools: `pgdn/tools/` (e.g. `nmap.py`, `ssltester.py`)
+- CDN & security probes: `pgdn/web_probes/`
+
+## Config
+
+- `pgdn/core/config.py`
+- `config.json` and `config.docker.json`
+- ENV support for secrets
+
+## Workflow Summary
+
+1. Dev env via `./scripts/dev-start.sh`
+2. `pip install -e .`
+3. Run `pytest` to confirm setup
+4. Use `pgdn` CLI for flow testing
+
+## Parallelism
+
+- Celery + Redis for distributed work
+- Parallel logic in `parallel.py`, queue manager in `utils/queue_manager.py`
+
+## Security Goals
+
+This is a **defensive DePIN security tool** for:
+- Vulnerability scanning
+- CVE correlation
+- Monitoring
+- Secure reporting
+
+## Design Principles
+
+- Modular agent architecture
+- Clear CLI vs Library separation
+- Repo pattern for DB access
+- Config-driven logic
+
+# Environment
+- we run a virtual env - always source using 'source myenv/bin/activate' 
